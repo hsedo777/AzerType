@@ -21,6 +21,7 @@ class AzerType {
         this.currentIndex = 0;
         this.score = 0;
         this.total = 0;
+        this.eventData = new WeakMap();
     }
 
     start() {
@@ -40,22 +41,42 @@ class AzerType {
         this.modeRadios = document.querySelectorAll('input[name="gameMode"]');
     }
 
+    mount(element, type, listener, options) {
+        element.addEventListener(type, listener, options);
+        this.eventData.get(element).push({ type, listener, options });
+    }
+
+    unmount(element, type, listener, options) {
+        element.removeEventListener(type, listener, options);
+    }
+
+    unmountAll(element) {
+        this.eventData.get(element).forEach(el => {
+            this.unmount(element, el.type, el.listener, el.options);
+        });
+    }
+
     bindEvents() {
-        this.validateBtn.addEventListener('click', () => this.validateInput());
-        this.userInput.addEventListener('keypress', (e) => {
+        this.eventData.set(this.validateBtn, []);
+        this.mount(this.validateBtn, 'click', () => this.validateInput());
+
+        this.eventData.set(this.userInput, []);
+        this.mount(this.userInput, 'keypress', (e) => {
             if (e.key === 'Enter') {
                 this.validateInput();
             }
         });
 
         this.modeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
+            this.eventData.set(radio, []);
+            this.mount(radio, 'change', (e) => {
                 this.currentMode = e.target.value;
                 this.resetGame();
             });
         });
 
-        this.shareBtn.addEventListener('click', () => this.shareScore());
+        this.eventData.set(this.shareBtn, []);
+        this.mount(this.shareBtn, 'click', () => this.shareScore());
 
         // Focus on input when page loads
         this.userInput.focus();
@@ -65,7 +86,7 @@ class AzerType {
         return this.currentMode === 'mots' ? this.words : this.sentences;
     }
 
-    getCurrentText(){
+    getCurrentText() {
         return this.currentIndex == -1 ? '' : this.getCurrentList()[this.currentIndex];
     }
 
